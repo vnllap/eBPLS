@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eBPLS — BHD Clearance Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="form-card">
+
+    <!-- Header -->
+    <div class="form-header">
+      <div class="form-header-icon">
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="2" width="14" height="16" rx="2" stroke="#888" stroke-width="1.2"/>
+          <line x1="6" y1="7" x2="14" y2="7" stroke="#888" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="6" y1="10" x2="14" y2="10" stroke="#888" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="6" y1="13" x2="10" y2="13" stroke="#888" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="form-title">eBPLS BHD Clearance Application Form</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Application Type -->
+    <div class="section">
+      <div class="section-label">
+        <div class="section-num">1</div>
+        <div class="section-title">Application type</div>
+      </div>
+      <div class="toggle-row" id="app-type-row">
+        <button class="toggle-btn active" onclick="setToggle(this)">Renew</button>
+        <button class="toggle-btn" onclick="setToggle(this)">New</button>
+        <button class="toggle-btn" onclick="setToggle(this)">Additional Line of Business</button>
+        <button class="toggle-btn" onclick="setToggle(this)">Change Location</button>
+        <button class="toggle-btn" onclick="setToggle(this)">Change of Management</button>
+        <span class="toggle-hint">Select one</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Section 2: Personal Information -->
+    <div class="section">
+      <div class="section-label">
+        <div class="section-num">2</div>
+        <div class="section-title">Personal information</div>
+      </div>
+
+      <div class="toggle-row" id="owner-type-row" style="margin-bottom: 14px;">
+        <button class="toggle-btn active" onclick="setOwnerType(this, 'sole')">Single Proprietor</button>
+        <button class="toggle-btn" onclick="setOwnerType(this, 'corp')">Corporation / Partnership</button>
+      </div>
+
+      <div id="owner-sole">
+        <div class="field-row cols-4">
+          <div class="field-group">
+            <label>Owner's last name</label>
+            <input type="text" id="last-name" placeholder="Last name">
+          </div>
+          <div class="field-group">
+            <label>Owner's first name</label>
+            <input type="text" id="first-name" placeholder="First name">
+          </div>
+          <div class="field-group">
+            <label>Owner's middle name</label>
+            <input type="text" id="middle-name" placeholder="Optional">
+          </div>
+          <div class="field-group">
+            <label>Suffix</label>
+            <input type="text" id="suffix" placeholder="Optional">
+          </div>
+        </div>
+      </div>
+
+      <div id="owner-corp" style="display: none;">
+        <div class="field-row cols-1">
+          <div class="field-group">
+            <label>Registered business name</label>
+            <input type="text" id="corp-name" placeholder="Full registered corporate / partnership name">
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row cols-1" style="margin-top: 0;">
+        <div class="field-group">
+          <label>Owner's contact number</label>
+          <input type="tel" id="contact" placeholder="e.g. 09XX XXX XXXX">
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Section 3: Business Information -->
+    <div class="section">
+      <div class="section-label">
+        <div class="section-num">3</div>
+        <div class="section-title">Business / Establishment Information</div>
+      </div>
+
+      <div class="field-row cols-1">
+        <div class="field-group">
+          <label>Tradename / Business Name</label>
+          <input type="text" id="business-name" placeholder="Registered business name">
+        </div>
+      </div>
+
+      <div class="field-row cols-1">
+        <div class="field-group">
+          <label>Business Address</label>
+          <input type="text" id="address" placeholder="Street address, building, unit">
+        </div>
+      </div>
+
+      <div class="field-row cols-1">
+        <div class="field-group">
+          <label>Barangay</label>
+          <div class="autocomplete-wrapper">
+            <input type="text" id="barangay-input" placeholder="Type to search barangay..." autocomplete="off">
+            <ul id="barangay-dropdown" class="autocomplete-dropdown" hidden></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row cols-1">
+        <div class="field-group">
+          <label>Line of business</label>
+          <select id="lob-select">
+            <option value="">Select line of business...</option>
+            <option>Retail Trade</option>
+            <option>Food Service / Restaurant</option>
+            <option>Personal Services</option>
+            <option>Health Services</option>
+            <option>Educational Services</option>
+            <option>Financial Services</option>
+            <option>Real Estate</option>
+            <option>Transportation</option>
+            <option>Manufacturing</option>
+            <option>Construction</option>
+            <option>Information Technology</option>
+            <option>Entertainment / Recreation</option>
+            <option>Wholesale Trade</option>
+            <option>Professional Services</option>
+            <option>Other Services</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast" hidden></div>
+
+    <!-- Actions -->
+    <div class="submit-row">
+      <button class="btn-secondary" onclick="clearForm()">Clear form</button>
+      <button class="btn-primary" id="submit-btn" onclick="submitForm()">
+        <span id="submit-text">Submit application</span>
+        <span id="submit-spinner" class="spinner" hidden></span>
+      </button>
+    </div>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
