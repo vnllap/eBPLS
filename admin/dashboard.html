@@ -641,9 +641,8 @@
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">All statuses</option>
           <option>For Inspection</option>
-          <option>Pending - for compliance with noted sanitary violation</option>
+          <option>Disapproved - for compliance with noted sanitary violation</option>
           <option>Approved</option>
-          <option>Disapproved</option>
         </select>
         <select class="filter-select" id="filter-type" onchange="applyFilters()">
           <option value="">All types</option>
@@ -715,9 +714,8 @@
             <select id="edit-status" onchange="updateStatusHint()">
               <option value="" selected>— Select status —</option>
               <option value="For Inspection">For Inspection</option>
-              <option value="Pending - for compliance with noted sanitary violation">Pending - for compliance with noted sanitary violation</option>
+              <option value="Disapproved - for compliance with noted sanitary violation">Disapproved - for compliance with noted sanitary violation</option>
               <option value="Approved">Approved</option>
-              <option value="Disapproved">Disapproved</option>
             </select>
             <div id="status-hint" class="status-hint" style="display:none;"></div>
           </div>
