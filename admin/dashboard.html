@@ -271,10 +271,10 @@
       white-space: nowrap;
     }
 
-    .status-ForInspection                                  { background: #e8eaf6; color: #3949ab; }
-    .status-PendingCompliance                              { background: #fce4ec; color: #880e4f; }
-    .status-Approved                                       { background: #e8f5e9; color: #2e7d32; }
-    .status-Disapproved                                    { background: #ffebee; color: #c62828; }
+    .status-ForInspection    { background: #e8eaf6; color: #3949ab; }
+    .status-PendingCompliance { background: #fce4ec; color: #880e4f; }
+    .status-Approved         { background: #e8f5e9; color: #2e7d32; }
+    .status-Disapproved      { background: #ffebee; color: #c62828; }
 
     .edit-btn {
       padding: 5px 12px;
@@ -618,9 +618,11 @@
         <div class="stat-label">Total Applications</div>
         <div class="stat-value" id="stat-total">—</div>
       </div>
+      <!-- CHANGED: was "For Inspection" counting only that status;
+           now "Pending Review" counts entries with no status set yet -->
       <div class="stat-card">
-        <div class="stat-label">For Inspection</div>
-        <div class="stat-value" id="stat-inspection" style="color: #3949ab;">—</div>
+        <div class="stat-label">Pending Review</div>
+        <div class="stat-value" id="stat-pending" style="color: #888;">—</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Approved</div>
@@ -709,14 +711,15 @@
 
           <div class="modal-field">
             <label>Status</label>
+            <!-- CHANGED: default option is blank — admin must explicitly choose a status -->
             <select id="edit-status" onchange="updateStatusHint()">
-              <option value="" selected>—</option>
+              <option value="" selected>— Select status —</option>
               <option value="For Inspection">For Inspection</option>
               <option value="Pending - for compliance with noted sanitary violation">Pending - for compliance with noted sanitary violation</option>
               <option value="Approved">Approved</option>
               <option value="Disapproved">Disapproved</option>
             </select>
-            <div id="status-hint" class="status-hint"></div>
+            <div id="status-hint" class="status-hint" style="display:none;"></div>
           </div>
 
           <div class="modal-field">
@@ -945,6 +948,7 @@
       if (!value) return null;
       return STATUSES.find(s => s.value === value) || null;
     }
+
     // ── Auth guard ──────────────────────────────────────────────
     const adminToken    = sessionStorage.getItem('admin_token');
     const adminFullName = sessionStorage.getItem('admin_fullname') || 'Admin';
@@ -1003,9 +1007,10 @@
     }
 
     // ── Stats ───────────────────────────────────────────────────
+    // CHANGED: stat-pending now counts entries with no status set (blank/null)
     function updateStats() {
       document.getElementById('stat-total').textContent       = allEntries.length;
-      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
+      document.getElementById('stat-pending').textContent     = allEntries.filter(e => !e['Status'] || e['Status'] === '').length;
       document.getElementById('stat-approved').textContent    = allEntries.filter(e => e['Status'] === 'Approved').length;
       document.getElementById('stat-disapproved').textContent = allEntries.filter(e => e['Status'] === 'Disapproved').length;
     }
@@ -1051,7 +1056,7 @@
         const meta = getStatusMeta(statusVal);
         const statusCell = meta
           ? `<span class="status-badge status-${meta.cssKey}" title="${statusVal}">${meta.label}</span>`
-          : '';
+          : '<span style="font-size:11px;color:#bbb;">—</span>';
         return `
           <tr>
             <td class="cell-id">${entry['App ID'] || '—'}</td>
@@ -1141,6 +1146,7 @@
           <div class="info-val">${v || '—'}</div>
         </div>`).join('');
 
+      // CHANGED: always default to blank; only set if entry has a saved status
       document.getElementById('edit-status').value      = entry['Status'] || '';
       document.getElementById('edit-attachments').value = entry['Attachments'] || '';
       document.getElementById('edit-remarks').value     = entry['Remarks'] || '';
@@ -1150,14 +1156,19 @@
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
+    // CHANGED: null-safe — hides hint when status is blank
     function updateStatusHint() {
       const val  = document.getElementById('edit-status').value;
       const meta = getStatusMeta(val);
       const hint = document.getElementById('status-hint');
-      hint.textContent = meta.value; // show full label as tooltip-style hint
+      if (!meta) {
+        hint.style.display = 'none';
+        return;
+      }
+      hint.textContent = meta.value;
       hint.style.background = meta.badgeBg;
       hint.style.color = meta.badgeColor;
-      // Only show hint for the long compliance status
+      // Only show hint for the long compliance status label
       hint.style.display = val === 'Pending - for compliance with noted sanitary violation' ? 'inline-flex' : 'none';
     }
 
@@ -1364,7 +1375,45 @@
         byType[t]   = (byType[t] || 0) + 1;
       });
 
+      // CHANGED: include a "No Status" group in the report for blank-status entries
+      const noStatusEntries = entries.filter(e => !e['Status'] || e['Status'] === '');
       let applicantSections = '';
+
+      if (noStatusEntries.length) {
+        const rows = noStatusEntries.map((e, i) => `
+          <tr style="border-bottom: 0.5px solid #eee;">
+            <td style="padding:7px 10px; font-size:11px; color:#888; font-family:monospace;">${i + 1}</td>
+            <td style="padding:7px 10px; font-size:11.5px; font-family:monospace; color:#555;">${e['App ID'] || '—'}</td>
+            <td style="padding:7px 10px; font-size:12px; font-weight:500;">${e['Owner Name'] || '—'}</td>
+            <td style="padding:7px 10px; font-size:11.5px; color:#555;">${e['Business Name'] || '—'}</td>
+            <td style="padding:7px 10px; font-size:11.5px; color:#555;">${e['Application Type'] || '—'}</td>
+            <td style="padding:7px 10px; font-size:11.5px; color:#555;">${e['Barangay'] || '—'}</td>
+            <td style="padding:7px 10px; font-size:11px; color:#888;">${e['Timestamp'] || '—'}</td>
+          </tr>`).join('');
+
+        applicantSections += `
+          <div style="margin-bottom:28px; break-inside:avoid;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+              <span style="display:inline-block; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.04em; background:#f5f4f0; color:#888;">Pending Review</span>
+              <span style="font-size:12px; color:#888;">${noStatusEntries.length} application${noStatusEntries.length !== 1 ? 's' : ''}</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; border:0.5px solid #e0ddd6; border-radius:8px; overflow:hidden; font-family:'DM Sans',sans-serif;">
+              <thead>
+                <tr style="background:#f5f4f0; border-bottom:0.5px solid #e0ddd6;">
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">#</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">App ID</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">Owner / Applicant</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">Business Name</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">Type</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">Barangay</th>
+                  <th style="padding:8px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#888; text-align:left; font-weight:500;">Submitted</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }
+
       STATUSES.forEach(({ value: status, label, reportBg, reportColor }) => {
         const group = entries.filter(e => (e['Status'] || '') === status);
         if (!group.length) return;
@@ -1424,9 +1473,11 @@
         hour:'2-digit', minute:'2-digit'
       });
 
-      // Build stat summary cards for all 5 statuses
+      // Build stat summary cards — includes "Pending Review" for blank-status entries
+      const pendingCount = entries.filter(e => !e['Status'] || e['Status'] === '').length;
       const statCards = [
         ['Total', total, '#1a1a1a'],
+        ['Pending Review', pendingCount, '#888'],
         ...STATUSES.map(s => [s.label, byStatus[s.value] || 0, s.reportColor])
       ].map(([label, val, color]) => `
         <div style="border:0.5px solid #e0ddd6; border-radius:9px; padding:12px 14px; background:#fafaf8;">
