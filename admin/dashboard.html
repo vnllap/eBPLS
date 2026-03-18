@@ -1173,12 +1173,17 @@
     }
 
     function closeEditModal(e) {
-      if (e && e.target !== document.getElementById('edit-modal')) return;
+      // Only close when called directly (no event), from the × / Cancel buttons,
+      // or when the click landed exactly on the dark overlay backdrop itself.
+      if (e instanceof Event && e.target !== document.getElementById('edit-modal')) return;
       document.getElementById('edit-modal').style.display = 'none';
       editingRow = null;
     }
 
     async function saveEdit() {
+      const rowToSave = editingRow;   // snapshot before any async gap
+      if (rowToSave === null) return;
+
       const btn = document.getElementById('save-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>';
@@ -1186,7 +1191,7 @@
       try {
         const result = await api({
           action: 'updateEntry',
-          rowIndex: editingRow,
+          rowIndex: rowToSave,
           data: {
             status:      document.getElementById('edit-status').value,
             attachments: document.getElementById('edit-attachments').value,
@@ -1198,6 +1203,7 @@
         if (result.success) {
           showToast('Entry updated successfully', 'success');
           document.getElementById('edit-modal').style.display = 'none';
+          editingRow = null;
           await loadEntries();
         } else {
           showToast('Error: ' + result.error, 'error');
@@ -1206,7 +1212,7 @@
         showToast('Network error. Try again.', 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Save changes';
+        btn.innerHTML = 'Save changes';
       }
     }
 
@@ -1216,7 +1222,7 @@
     }
 
     function closeAddModal(e) {
-      if (e && e.target !== document.getElementById('add-modal')) return;
+      if (e instanceof Event && e.target !== document.getElementById('add-modal')) return;
       document.getElementById('add-modal').style.display = 'none';
     }
 
@@ -1278,7 +1284,7 @@
     }
 
     function closeReportModal(e) {
-      if (e && e.target !== document.getElementById('report-modal')) return;
+      if (e instanceof Event && e.target !== document.getElementById('report-modal')) return;
       document.getElementById('report-modal').style.display = 'none';
     }
 
