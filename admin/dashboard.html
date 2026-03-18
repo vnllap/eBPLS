@@ -134,7 +134,7 @@
     /* ── Stats row ── */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -271,7 +271,6 @@
       white-space: nowrap;
     }
 
-    .status-Pending                                        { background: #fff3e0; color: #e65100; }
     .status-ForInspection                                  { background: #e8eaf6; color: #3949ab; }
     .status-PendingCompliance                              { background: #fce4ec; color: #880e4f; }
     .status-Approved                                       { background: #e8f5e9; color: #2e7d32; }
@@ -620,10 +619,6 @@
         <div class="stat-value" id="stat-total">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Pending</div>
-        <div class="stat-value" id="stat-pending" style="color: #e65100;">—</div>
-      </div>
-      <div class="stat-card">
         <div class="stat-label">For Inspection</div>
         <div class="stat-value" id="stat-inspection" style="color: #3949ab;">—</div>
       </div>
@@ -715,8 +710,7 @@
           <div class="modal-field">
             <label>Status</label>
             <select id="edit-status" onchange="updateStatusHint()">
-              <option value="">—</option>
-              <option value="Pending">Pending</option>
+              <option value="" selected>—</option>
               <option value="For Inspection">For Inspection</option>
               <option value="Pending - for compliance with noted sanitary violation">Pending - for compliance with noted sanitary violation</option>
               <option value="Approved">Approved</option>
@@ -918,13 +912,6 @@
     // ── Status config (single source of truth) ──────────────────
     const STATUSES = [
       {
-        value: 'Pending',
-        label: 'Pending',
-        cssKey: 'Pending',
-        badgeBg: '#fff3e0', badgeColor: '#e65100',
-        reportBg: '#fff3e0', reportColor: '#e65100',
-      },
-      {
         value: 'For Inspection',
         label: 'For Inspection',
         cssKey: 'ForInspection',
@@ -1018,7 +1005,7 @@
     // ── Stats ───────────────────────────────────────────────────
     function updateStats() {
       document.getElementById('stat-total').textContent       = allEntries.length;
-      document.getElementById('stat-pending').textContent     = allEntries.filter(e => e['Status'] === 'Pending').length;      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
+      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
       document.getElementById('stat-approved').textContent    = allEntries.filter(e => e['Status'] === 'Approved').length;
       document.getElementById('stat-disapproved').textContent = allEntries.filter(e => e['Status'] === 'Disapproved').length;
     }
