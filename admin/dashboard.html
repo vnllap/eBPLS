@@ -643,7 +643,7 @@
         <input class="search-input" id="search-input" placeholder="Search by name, business, ID…" oninput="applyFilters()">
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">All statuses</option>
-          <option> </option>
+          <option>Pending</option>
           <option>For Inspection</option>
           <option>Pending - for compliance with noted sanitary violation</option>
           <option>Approved</option>
@@ -716,6 +716,7 @@
           <div class="modal-field">
             <label>Status</label>
             <select id="edit-status" onchange="updateStatusHint()">
+              <option value="">—</option>
               <option value="Pending">Pending</option>
               <option value="For Inspection">For Inspection</option>
               <option value="Pending - for compliance with noted sanitary violation">Pending - for compliance with noted sanitary violation</option>
@@ -955,9 +956,9 @@
     ];
 
     function getStatusMeta(value) {
-      return STATUSES.find(s => s.value === value) || STATUSES[0];
+      if (!value) return null;
+      return STATUSES.find(s => s.value === value) || null;
     }
-
     // ── Auth guard ──────────────────────────────────────────────
     const adminToken    = sessionStorage.getItem('admin_token');
     const adminFullName = sessionStorage.getItem('admin_fullname') || 'Admin';
@@ -1018,8 +1019,7 @@
     // ── Stats ───────────────────────────────────────────────────
     function updateStats() {
       document.getElementById('stat-total').textContent       = allEntries.length;
-      document.getElementById('stat-pending').textContent     = allEntries.filter(e => e['Status'] === 'Pending').length;
-      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
+      document.getElementById('stat-pending').textContent     = allEntries.filter(e => e['Status'] === 'Pending').length;      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
       document.getElementById('stat-approved').textContent    = allEntries.filter(e => e['Status'] === 'Approved').length;
       document.getElementById('stat-disapproved').textContent = allEntries.filter(e => e['Status'] === 'Disapproved').length;
     }
@@ -1061,8 +1061,11 @@
       }
 
       tbody.innerHTML = page.map(entry => {
-        const statusVal = entry['Status'] || 'Pending';
+        const statusVal = entry['Status'] || '';
         const meta = getStatusMeta(statusVal);
+        const statusCell = meta
+          ? `<span class="status-badge status-${meta.cssKey}" title="${statusVal}">${meta.label}</span>`
+          : '';
         return `
           <tr>
             <td class="cell-id">${entry['App ID'] || '—'}</td>
@@ -1074,12 +1077,7 @@
             </td>
             <td>${entry['Barangay'] || '—'}</td>
             <td>${entry['Line of Business'] || '—'}</td>
-            <td>
-              <span class="status-badge status-${meta.cssKey}"
-                    title="${statusVal}">
-                ${meta.label}
-              </span>
-            </td>
+            <td>${statusCell}</td>
             <td style="font-size:11px;color:#888;">${entry['Processed By'] || '—'}</td>
             <td><button class="edit-btn" onclick="openEditModal(${entry._rowIndex})">Edit</button></td>
           </tr>`;
@@ -1157,7 +1155,7 @@
           <div class="info-val">${v || '—'}</div>
         </div>`).join('');
 
-      document.getElementById('edit-status').value      = entry['Status'] || 'Pending';
+      document.getElementById('edit-status').value      = entry['Status'] || '';
       document.getElementById('edit-attachments').value = entry['Attachments'] || '';
       document.getElementById('edit-remarks').value     = entry['Remarks'] || '';
       document.getElementById('edit-admin-notes').value = entry['Admin Notes'] || '';
@@ -1374,7 +1372,7 @@
       const byType   = {};
       STATUSES.forEach(s => byStatus[s.value] = 0);
       entries.forEach(e => {
-        const s = e['Status'] || 'Pending';
+        const s = e['Status'] || '';
         byStatus[s] = (byStatus[s] || 0) + 1;
         const t = e['Application Type'] || 'Unknown';
         byType[t]   = (byType[t] || 0) + 1;
@@ -1382,7 +1380,7 @@
 
       let applicantSections = '';
       STATUSES.forEach(({ value: status, label, reportBg, reportColor }) => {
-        const group = entries.filter(e => (e['Status'] || 'Pending') === status);
+        const group = entries.filter(e => (e['Status'] || '') === status);
         if (!group.length) return;
 
         const rows = group.map((e, i) => `
