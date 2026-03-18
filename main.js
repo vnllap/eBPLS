@@ -96,38 +96,33 @@ function initBarangayAutocomplete() {
   });
 }
 
-/* ── Toggle helpers ── */
-function setToggle(el) {
-  el.closest('.toggle-row').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function setOwnerType(el, type) {
-  el.closest('.toggle-row').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
+/* ── Owner type toggle ── */
+function setOwnerType(type) {
   document.getElementById('owner-sole').style.display = type === 'sole' ? '' : 'none';
   document.getElementById('owner-corp').style.display = type === 'corp' ? '' : 'none';
 }
 
 /* ── Clear form ── */
 function clearForm() {
-  document.querySelectorAll('input').forEach(i => i.value = '');
+  document.querySelectorAll('input[type="text"], input[type="tel"]').forEach(i => i.value = '');
   document.getElementById('barangay-dropdown').hidden = true;
-  const appToggles = document.querySelector('#app-type-row').querySelectorAll('.toggle-btn');
-  appToggles.forEach(b => b.classList.remove('active'));
-  appToggles[0].classList.add('active');
-  document.getElementById('owner-sole').style.display = '';
-  document.getElementById('owner-corp').style.display = 'none';
-  const ownerToggles = document.querySelector('#owner-type-row').querySelectorAll('.toggle-btn');
-  ownerToggles.forEach(b => b.classList.remove('active'));
-  ownerToggles[0].classList.add('active');
+
+  // Reset application type to first option (Renew)
+  const appTypeFirst = document.querySelector('input[name="app-type"]');
+  if (appTypeFirst) appTypeFirst.checked = true;
+
+  // Reset owner type to sole proprietor and show correct fields
+  const ownerTypeFirst = document.querySelector('input[name="owner-type"][value="sole"]');
+  if (ownerTypeFirst) ownerTypeFirst.checked = true;
+  setOwnerType('sole');
 }
 
 /* ── Collect form data ── */
 function collectFormData() {
-  const appType = document.querySelector('#app-type-row .toggle-btn.active')?.textContent || '';
-  const ownerType = document.querySelector('#owner-type-row .toggle-btn.active')?.textContent || '';
-  const isSole = document.getElementById('owner-sole').style.display !== 'none';
+  const appType   = document.querySelector('input[name="app-type"]:checked')?.value || '';
+  const ownerTypeVal = document.querySelector('input[name="owner-type"]:checked')?.value || 'sole';
+  const ownerType = ownerTypeVal === 'sole' ? 'Single Proprietor' : 'Corporation / Partnership';
+  const isSole    = ownerTypeVal === 'sole';
 
   let ownerName = '';
   if (isSole) {
