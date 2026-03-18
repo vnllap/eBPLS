@@ -31,15 +31,34 @@
     <div class="section">
       <div class="section-label">
         <div class="section-num">1</div>
-        <div class="section-title">Application type</div>
+        <div class="section-title">Application type <span class="toggle-hint">Select one</span></div>
       </div>
-      <div class="toggle-row" id="app-type-row">
-        <button class="toggle-btn active" onclick="setToggle(this)">Renew</button>
-        <button class="toggle-btn" onclick="setToggle(this)">New</button>
-        <button class="toggle-btn" onclick="setToggle(this)">Additional Line of Business</button>
-        <button class="toggle-btn" onclick="setToggle(this)">Change Location</button>
-        <button class="toggle-btn" onclick="setToggle(this)">Change of Management</button>
-        <span class="toggle-hint">Select one</span>
+      <div class="checkbox-group" id="app-type-row">
+        <label class="checkbox-option">
+          <input type="radio" name="app-type" value="Renew" checked>
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Renew</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="radio" name="app-type" value="New">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">New</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="radio" name="app-type" value="Additional Line of Business">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Additional Line of Business</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="radio" name="app-type" value="Change Location">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Change Location</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="radio" name="app-type" value="Change of Management">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Change of Management</span>
+        </label>
       </div>
     </div>
 
@@ -52,9 +71,17 @@
         <div class="section-title">Personal information</div>
       </div>
 
-      <div class="toggle-row" id="owner-type-row" style="margin-bottom: 14px;">
-        <button class="toggle-btn active" onclick="setOwnerType(this, 'sole')">Single Proprietor</button>
-        <button class="toggle-btn" onclick="setOwnerType(this, 'corp')">Corporation / Partnership</button>
+      <div class="checkbox-group" id="owner-type-row" style="margin-bottom: 14px;">
+        <label class="checkbox-option">
+          <input type="radio" name="owner-type" value="sole" checked onchange="setOwnerType('sole')">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Single Proprietor</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="radio" name="owner-type" value="corp" onchange="setOwnerType('corp')">
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Corporation / Partnership</span>
+        </label>
       </div>
 
       <div id="owner-sole">
@@ -131,7 +158,7 @@
       <div class="field-row cols-1">
         <div class="field-group">
           <label>Line of business</label>
-          <input type="text" id="lob-select" placeholder="e.g. Sari-Sari Store.....">
+          <input type="text" id="lob-select" placeholder="e.g. Retail Trade, Food Service, IT Services…">
         </div>
       </div>
     </div>
