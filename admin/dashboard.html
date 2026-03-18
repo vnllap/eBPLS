@@ -113,7 +113,6 @@
     .btn-dark:hover { opacity: 0.82; }
     .btn-dark:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* report button with icon */
     .btn-report {
       display: flex;
       align-items: center;
@@ -135,7 +134,7 @@
     /* ── Stats row ── */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -260,6 +259,7 @@
 
     .cell-name { font-weight: 500; }
 
+    /* ── Status badges ── */
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -271,10 +271,11 @@
       white-space: nowrap;
     }
 
-    .status-Pending    { background: #fff3e0; color: #e65100; }
-    .status-Approved   { background: #e8f5e9; color: #2e7d32; }
-    .status-Rejected   { background: #ffebee; color: #c62828; }
-    .status-Processing { background: #e3f2fd; color: #1565c0; }
+    .status-Pending                                        { background: #fff3e0; color: #e65100; }
+    .status-ForInspection                                  { background: #e8eaf6; color: #3949ab; }
+    .status-PendingCompliance                              { background: #fce4ec; color: #880e4f; }
+    .status-Approved                                       { background: #e8f5e9; color: #2e7d32; }
+    .status-Disapproved                                    { background: #ffebee; color: #c62828; }
 
     .edit-btn {
       padding: 5px 12px;
@@ -295,7 +296,6 @@
       color: var(--text-muted);
     }
 
-    .empty-state svg { margin-bottom: 10px; opacity: 0.3; }
     .empty-label { font-size: 13px; }
 
     /* ── Pagination ── */
@@ -405,9 +405,7 @@
     }
     .info-val { font-size: 13px; }
 
-    .modal-field {
-      margin-bottom: 10px;
-    }
+    .modal-field { margin-bottom: 10px; }
 
     .modal-field label {
       display: block;
@@ -450,6 +448,17 @@
     .modal-field input:focus,
     .modal-field select:focus,
     .modal-field textarea:focus { border-color: #aaa; }
+
+    /* Status hint chip shown below the select */
+    .status-hint {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 6px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
 
     .modal-footer {
       display: flex;
@@ -502,8 +511,6 @@
     }
 
     /* ── Report Modal ── */
-    #report-modal .modal { max-width: 480px; }
-
     .report-type-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -553,12 +560,6 @@
       padding: 9px 12px;
       border: 0.5px solid var(--border-light);
       margin-top: 4px;
-    }
-
-    /* ── Print / Report Output ── */
-    @media print {
-      body > *:not(#report-print-frame) { display: none !important; }
-      #report-print-frame { display: block !important; }
     }
 
     @media (max-width: 700px) {
@@ -623,12 +624,16 @@
         <div class="stat-value" id="stat-pending" style="color: #e65100;">—</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">For Inspection</div>
+        <div class="stat-value" id="stat-inspection" style="color: #3949ab;">—</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Approved</div>
         <div class="stat-value" id="stat-approved" style="color: #2e7d32;">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Rejected</div>
-        <div class="stat-value" id="stat-rejected" style="color: #c62828;">—</div>
+        <div class="stat-label">Disapproved</div>
+        <div class="stat-value" id="stat-disapproved" style="color: #c62828;">—</div>
       </div>
     </div>
 
@@ -639,9 +644,10 @@
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">All statuses</option>
           <option>Pending</option>
-          <option>Processing</option>
+          <option>For Inspection</option>
+          <option>Pending - for compliance with noted sanitary violation</option>
           <option>Approved</option>
-          <option>Rejected</option>
+          <option>Disapproved</option>
         </select>
         <select class="filter-select" id="filter-type" onchange="applyFilters()">
           <option value="">All types</option>
@@ -709,12 +715,14 @@
 
           <div class="modal-field">
             <label>Status</label>
-            <select id="edit-status">
-              <option>Pending</option>
-              <option>Processing</option>
-              <option>Approved</option>
-              <option>Rejected</option>
+            <select id="edit-status" onchange="updateStatusHint()">
+              <option value="Pending">Pending</option>
+              <option value="For Inspection">For Inspection</option>
+              <option value="Pending - for compliance with noted sanitary violation">Pending - for compliance with noted sanitary violation</option>
+              <option value="Approved">Approved</option>
+              <option value="Disapproved">Disapproved</option>
             </select>
+            <div id="status-hint" class="status-hint"></div>
           </div>
 
           <div class="modal-field">
@@ -841,7 +849,7 @@
     </div>
   </div>
 
-  <!-- ── Report Modal ── -->
+  <!-- Report Modal -->
   <div class="modal-overlay" id="report-modal" style="display:none;" onclick="closeReportModal(event)">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:460px;">
       <div class="modal-header">
@@ -906,6 +914,50 @@
 
   <script src="../config.js"></script>
   <script>
+
+    // ── Status config (single source of truth) ──────────────────
+    const STATUSES = [
+      {
+        value: 'Pending',
+        label: 'Pending',
+        cssKey: 'Pending',
+        badgeBg: '#fff3e0', badgeColor: '#e65100',
+        reportBg: '#fff3e0', reportColor: '#e65100',
+      },
+      {
+        value: 'For Inspection',
+        label: 'For Inspection',
+        cssKey: 'ForInspection',
+        badgeBg: '#e8eaf6', badgeColor: '#3949ab',
+        reportBg: '#e8eaf6', reportColor: '#3949ab',
+      },
+      {
+        value: 'Pending - for compliance with noted sanitary violation',
+        label: 'Pending – Sanitary Violation',
+        cssKey: 'PendingCompliance',
+        badgeBg: '#fce4ec', badgeColor: '#880e4f',
+        reportBg: '#fce4ec', reportColor: '#880e4f',
+      },
+      {
+        value: 'Approved',
+        label: 'Approved',
+        cssKey: 'Approved',
+        badgeBg: '#e8f5e9', badgeColor: '#2e7d32',
+        reportBg: '#e8f5e9', reportColor: '#2e7d32',
+      },
+      {
+        value: 'Disapproved',
+        label: 'Disapproved',
+        cssKey: 'Disapproved',
+        badgeBg: '#ffebee', badgeColor: '#c62828',
+        reportBg: '#ffebee', reportColor: '#c62828',
+      },
+    ];
+
+    function getStatusMeta(value) {
+      return STATUSES.find(s => s.value === value) || STATUSES[0];
+    }
+
     // ── Auth guard ──────────────────────────────────────────────
     const adminToken    = sessionStorage.getItem('admin_token');
     const adminFullName = sessionStorage.getItem('admin_fullname') || 'Admin';
@@ -965,10 +1017,11 @@
 
     // ── Stats ───────────────────────────────────────────────────
     function updateStats() {
-      document.getElementById('stat-total').textContent    = allEntries.length;
-      document.getElementById('stat-pending').textContent  = allEntries.filter(e => e['Status'] === 'Pending').length;
-      document.getElementById('stat-approved').textContent = allEntries.filter(e => e['Status'] === 'Approved').length;
-      document.getElementById('stat-rejected').textContent = allEntries.filter(e => e['Status'] === 'Rejected').length;
+      document.getElementById('stat-total').textContent       = allEntries.length;
+      document.getElementById('stat-pending').textContent     = allEntries.filter(e => e['Status'] === 'Pending').length;
+      document.getElementById('stat-inspection').textContent  = allEntries.filter(e => e['Status'] === 'For Inspection').length;
+      document.getElementById('stat-approved').textContent    = allEntries.filter(e => e['Status'] === 'Approved').length;
+      document.getElementById('stat-disapproved').textContent = allEntries.filter(e => e['Status'] === 'Disapproved').length;
     }
 
     // ── Filters ─────────────────────────────────────────────────
@@ -1008,8 +1061,8 @@
       }
 
       tbody.innerHTML = page.map(entry => {
-        const status = entry['Status'] || 'Pending';
-        const cls    = 'status-' + status.replace(/\s/g, '');
+        const statusVal = entry['Status'] || 'Pending';
+        const meta = getStatusMeta(statusVal);
         return `
           <tr>
             <td class="cell-id">${entry['App ID'] || '—'}</td>
@@ -1021,7 +1074,12 @@
             </td>
             <td>${entry['Barangay'] || '—'}</td>
             <td>${entry['Line of Business'] || '—'}</td>
-            <td><span class="status-badge ${cls}">${status}</span></td>
+            <td>
+              <span class="status-badge status-${meta.cssKey}"
+                    title="${statusVal}">
+                ${meta.label}
+              </span>
+            </td>
             <td style="font-size:11px;color:#888;">${entry['Processed By'] || '—'}</td>
             <td><button class="edit-btn" onclick="openEditModal(${entry._rowIndex})">Edit</button></td>
           </tr>`;
@@ -1104,7 +1162,19 @@
       document.getElementById('edit-remarks').value     = entry['Remarks'] || '';
       document.getElementById('edit-admin-notes').value = entry['Admin Notes'] || '';
 
+      updateStatusHint();
       document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function updateStatusHint() {
+      const val  = document.getElementById('edit-status').value;
+      const meta = getStatusMeta(val);
+      const hint = document.getElementById('status-hint');
+      hint.textContent = meta.value; // show full label as tooltip-style hint
+      hint.style.background = meta.badgeBg;
+      hint.style.color = meta.badgeColor;
+      // Only show hint for the long compliance status
+      hint.style.display = val === 'Pending - for compliance with noted sanitary violation' ? 'inline-flex' : 'none';
     }
 
     function closeEditModal(e) {
@@ -1206,7 +1276,6 @@
 
     // ── Report Modal ─────────────────────────────────────────────
     function openReportModal() {
-      // Default date range inputs to today
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('report-date-from').value = today;
       document.getElementById('report-date-to').value   = today;
@@ -1241,14 +1310,12 @@
     // ── Report Generation ─────────────────────────────────────────
     function parseEntryDate(entry) {
       const ts = entry['Timestamp'] || '';
-      // Try to parse various timestamp formats
       const d = new Date(ts);
       if (!isNaN(d)) return d;
       return null;
     }
 
     function toDateStr(d) {
-      // Returns YYYY-MM-DD in local time
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
@@ -1256,7 +1323,6 @@
     }
 
     function fmtDate(dateStr) {
-      // Format YYYY-MM-DD to readable
       if (!dateStr) return '';
       const [y, m, d] = dateStr.split('-');
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1264,9 +1330,6 @@
     }
 
     function generateReport() {
-      const STATUSES = ['Pending', 'Processing', 'Approved', 'Rejected'];
-
-      // Determine date range label and filter
       let entries = [...allEntries];
       let reportTitle = '';
       let reportPeriod = '';
@@ -1285,14 +1348,8 @@
       } else if (reportType === 'range') {
         const fromVal = document.getElementById('report-date-from').value;
         const toVal   = document.getElementById('report-date-to').value;
-        if (!fromVal || !toVal) {
-          showToast('Please select both dates.', 'error');
-          return;
-        }
-        if (fromVal > toVal) {
-          showToast('"From" date must be before "To" date.', 'error');
-          return;
-        }
+        if (!fromVal || !toVal) { showToast('Please select both dates.', 'error'); return; }
+        if (fromVal > toVal)    { showToast('"From" date must be before "To" date.', 'error'); return; }
         entries = entries.filter(e => {
           const d = parseEntryDate(e);
           if (!d) return false;
@@ -1300,9 +1357,7 @@
           return ds >= fromVal && ds <= toVal;
         });
         reportTitle  = "Applications Report";
-        reportPeriod = fromVal === toVal
-          ? fmtDate(fromVal)
-          : `${fmtDate(fromVal)} — ${fmtDate(toVal)}`;
+        reportPeriod = fromVal === toVal ? fmtDate(fromVal) : `${fmtDate(fromVal)} — ${fmtDate(toVal)}`;
 
       } else {
         reportTitle  = "Full Applications Report";
@@ -1314,11 +1369,10 @@
         return;
       }
 
-      // Build stats
-      const total      = entries.length;
-      const byStatus   = {};
-      const byType     = {};
-      STATUSES.forEach(s => byStatus[s] = 0);
+      const total    = entries.length;
+      const byStatus = {};
+      const byType   = {};
+      STATUSES.forEach(s => byStatus[s.value] = 0);
       entries.forEach(e => {
         const s = e['Status'] || 'Pending';
         byStatus[s] = (byStatus[s] || 0) + 1;
@@ -1326,22 +1380,8 @@
         byType[t]   = (byType[t] || 0) + 1;
       });
 
-      // Build applicants sections per status
-      const statusColors = {
-        Pending:    '#e65100',
-        Processing: '#1565c0',
-        Approved:   '#2e7d32',
-        Rejected:   '#c62828',
-      };
-      const statusBg = {
-        Pending:    '#fff3e0',
-        Processing: '#e3f2fd',
-        Approved:   '#e8f5e9',
-        Rejected:   '#ffebee',
-      };
-
       let applicantSections = '';
-      STATUSES.forEach(status => {
+      STATUSES.forEach(({ value: status, label, reportBg, reportColor }) => {
         const group = entries.filter(e => (e['Status'] || 'Pending') === status);
         if (!group.length) return;
 
@@ -1366,8 +1406,8 @@
                 font-size:12px;
                 font-weight:600;
                 letter-spacing:0.04em;
-                background:${statusBg[status]};
-                color:${statusColors[status]};
+                background:${reportBg};
+                color:${reportColor};
               ">${status}</span>
               <span style="font-size:12px; color:#888;">${group.length} application${group.length !== 1 ? 's' : ''}</span>
             </div>
@@ -1388,7 +1428,6 @@
           </div>`;
       });
 
-      // Type breakdown rows
       const typeRows = Object.entries(byType).sort((a,b) => b[1]-a[1]).map(([t, c]) => `
         <tr>
           <td style="padding:6px 12px; font-size:12px;">${t}</td>
@@ -1396,11 +1435,20 @@
           <td style="padding:6px 12px; font-size:11px; color:#888; text-align:right;">${Math.round(c/total*100)}%</td>
         </tr>`).join('');
 
-      // Assemble the full HTML
       const generatedAt = now.toLocaleString('en-PH', {
         year:'numeric', month:'long', day:'numeric',
         hour:'2-digit', minute:'2-digit'
       });
+
+      // Build stat summary cards for all 5 statuses
+      const statCards = [
+        ['Total', total, '#1a1a1a'],
+        ...STATUSES.map(s => [s.label, byStatus[s.value] || 0, s.reportColor])
+      ].map(([label, val, color]) => `
+        <div style="border:0.5px solid #e0ddd6; border-radius:9px; padding:12px 14px; background:#fafaf8;">
+          <div style="font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#999; margin-bottom:5px;">${label}</div>
+          <div style="font-size:22px; font-weight:600; color:${color}; letter-spacing:-0.02em;">${val}</div>
+        </div>`).join('');
 
       const html = `<!DOCTYPE html>
 <html>
@@ -1419,30 +1467,15 @@
   </style>
 </head>
 <body>
-
-  <!-- Print button -->
   <div class="no-print" style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:24px;">
-    <button onclick="window.print()" style="
-      padding:8px 20px; border-radius:7px; border:none;
-      background:#1a1a1a; color:#fff;
-      font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
-      cursor:pointer;
-    ">🖨 Print / Save as PDF</button>
-    <button onclick="window.close()" style="
-      padding:8px 16px; border-radius:7px; border:0.5px solid #d4d1c8;
-      background:#fff; color:#555;
-      font-family:'DM Sans',sans-serif; font-size:13px;
-      cursor:pointer;
-    ">Close</button>
+    <button onclick="window.print()" style="padding:8px 20px; border-radius:7px; border:none; background:#1a1a1a; color:#fff; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer;">🖨 Print / Save as PDF</button>
+    <button onclick="window.close()" style="padding:8px 16px; border-radius:7px; border:0.5px solid #d4d1c8; background:#fff; color:#555; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer;">Close</button>
   </div>
 
-  <!-- Header -->
   <div style="border-bottom:1.5px solid #1a1a1a; padding-bottom:16px; margin-bottom:24px;">
     <div style="display:flex; justify-content:space-between; align-items:flex-end;">
       <div>
-        <div style="font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:4px;">
-          City Government of Baguio — Business Health Division
-        </div>
+        <div style="font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:4px;">City Government of Baguio — Business Health Division</div>
         <div style="font-size:22px; font-weight:600; letter-spacing:-0.02em;">${reportTitle}</div>
         <div style="font-size:13px; color:#555; margin-top:4px;">${reportPeriod}</div>
       </div>
@@ -1454,25 +1487,11 @@
     </div>
   </div>
 
-  <!-- Stats summary -->
   <div style="margin-bottom:28px;">
     <div style="font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.08em; color:#888; margin-bottom:12px;">Summary</div>
-    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px;">
-      ${[
-        ['Total', total, '#1a1a1a'],
-        ['Pending', byStatus['Pending']||0, '#e65100'],
-        ['Processing', byStatus['Processing']||0, '#1565c0'],
-        ['Approved', byStatus['Approved']||0, '#2e7d32'],
-        ['Rejected', byStatus['Rejected']||0, '#c62828'],
-      ].map(([label, val, color]) => `
-        <div style="border:0.5px solid #e0ddd6; border-radius:9px; padding:12px 14px; background:#fafaf8;">
-          <div style="font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:#999; margin-bottom:5px;">${label}</div>
-          <div style="font-size:22px; font-weight:600; color:${color}; letter-spacing:-0.02em;">${val}</div>
-        </div>`).join('')}
-    </div>
+    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:10px;">${statCards}</div>
   </div>
 
-  <!-- Application type breakdown -->
   <div style="margin-bottom:32px;">
     <div style="font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.08em; color:#888; margin-bottom:12px;">By Application Type</div>
     <table style="width:280px; border-collapse:collapse; border:0.5px solid #e0ddd6; border-radius:8px; overflow:hidden; font-family:'DM Sans',sans-serif;">
@@ -1487,22 +1506,18 @@
     </table>
   </div>
 
-  <!-- Applicants by status -->
   <div>
     <div style="font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.08em; color:#888; margin-bottom:16px;">Applicants by Status</div>
     ${applicantSections}
   </div>
 
-  <!-- Footer -->
   <div style="margin-top:40px; padding-top:14px; border-top:0.5px solid #e0ddd6; display:flex; justify-content:space-between; font-size:10.5px; color:#aaa;">
     <span>eBPLS BHD Clearance System — City Government of Baguio</span>
     <span>Generated ${generatedAt}</span>
   </div>
-
 </body>
 </html>`;
 
-      // Open in new window
       const win = window.open('', '_blank');
       if (!win) {
         showToast('Popup blocked. Please allow popups for this site.', 'error');
