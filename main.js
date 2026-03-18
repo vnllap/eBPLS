@@ -112,7 +112,6 @@ function setOwnerType(el, type) {
 /* ── Clear form ── */
 function clearForm() {
   document.querySelectorAll('input').forEach(i => i.value = '');
-  document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
   document.getElementById('barangay-dropdown').hidden = true;
   const appToggles = document.querySelector('#app-type-row').querySelectorAll('.toggle-btn');
   appToggles.forEach(b => b.classList.remove('active'));
@@ -149,7 +148,7 @@ function collectFormData() {
     businessName: document.getElementById('business-name').value.trim(),
     businessAddress: document.getElementById('address').value.trim(),
     barangay: document.getElementById('barangay-input').value.trim(),
-    lineOfBusiness: document.getElementById('lob-select').value,
+    lineOfBusiness: document.getElementById('lob-select').value.trim(),
   };
 }
 
